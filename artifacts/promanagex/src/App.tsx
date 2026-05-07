@@ -16,6 +16,10 @@ import Equipment from "@/pages/equipment";
 import Notifications from "@/pages/notifications";
 import Reports from "@/pages/reports";
 import AuditLogs from "@/pages/audit-logs";
+import Settings from "@/pages/settings";
+import Login from "@/pages/login";
+import Pricing from "@/pages/pricing";
+import About from "@/pages/about";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -28,23 +32,31 @@ const queryClient = new QueryClient({
 
 function Router() {
   return (
-    <Layout>
-      <Switch>
-        <Route path="/" component={Dashboard} />
-        <Route path="/users" component={UsersPage} />
-        <Route path="/contractors" component={Contractors} />
-        <Route path="/contracts" component={Contracts} />
-        <Route path="/attendance" component={Attendance} />
-        <Route path="/evaluations" component={Evaluations} />
-        <Route path="/violations" component={Violations} />
-        <Route path="/work-areas" component={WorkAreas} />
-        <Route path="/equipment" component={Equipment} />
-        <Route path="/notifications" component={Notifications} />
-        <Route path="/reports" component={Reports} />
-        <Route path="/audit-logs" component={AuditLogs} />
-        <Route component={NotFound} />
-      </Switch>
-    </Layout>
+    <Switch>
+      <Route path="/login" component={Login} />
+      <Route path="/pricing" component={Pricing} />
+      <Route path="/about" component={About} />
+      <Route>
+        <Layout>
+          <Switch>
+            <Route path="/" component={Dashboard} />
+            <Route path="/users" component={UsersPage} />
+            <Route path="/contractors" component={Contractors} />
+            <Route path="/contracts" component={Contracts} />
+            <Route path="/attendance" component={Attendance} />
+            <Route path="/evaluations" component={Evaluations} />
+            <Route path="/violations" component={Violations} />
+            <Route path="/work-areas" component={WorkAreas} />
+            <Route path="/equipment" component={Equipment} />
+            <Route path="/notifications" component={Notifications} />
+            <Route path="/reports" component={Reports} />
+            <Route path="/audit-logs" component={AuditLogs} />
+            <Route path="/settings" component={Settings} />
+            <Route component={NotFound} />
+          </Switch>
+        </Layout>
+      </Route>
+    </Switch>
   );
 }
 
