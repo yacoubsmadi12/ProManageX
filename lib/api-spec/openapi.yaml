@@ -1,22 +1,47 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: ProManageX Enterprise SaaS API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: Auth
+    description: Browser and mobile authentication endpoints.
+  - name: users
+    description: User management
+  - name: contractors
+    description: Contractor management
+  - name: contracts
+    description: Contract lifecycle management
+  - name: attendance
+    description: Attendance and workforce tracking
+  - name: evaluations
+    description: Evaluations and KPIs
+  - name: violations
+    description: Violations and penalties
+  - name: workAreas
+    description: Team work areas and project sites
+  - name: equipment
+    description: Equipment inventory and scrap management
+  - name: notifications
+    description: Notification system
+  - name: dashboard
+    description: Dashboard analytics and summaries
+  - name: reports
+    description: Reports system
+  - name: auditLogs
+    description: Audit logs
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,7 +49,1235 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ─── AUTH ───────────────────────────────────────────────────────────────────
+  /auth/user:
+    get:
+      tags: [Auth]
+      operationId: getCurrentAuthUser
+      summary: Get the currently authenticated user
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - $ref: '#/components/parameters/SessionCookie'
+      responses:
+        '200':
+          description: Auth status resolved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthUserEnvelope'
+  /login:
+    get:
+      tags: [Auth]
+      operationId: beginBrowserLogin
+      summary: Start the browser OIDC login flow
+      parameters:
+        - name: returnTo
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect to the OIDC authorization endpoint.
+  /callback:
+    get:
+      tags: [Auth]
+      operationId: handleBrowserLoginCallback
+      summary: Complete the browser OIDC login flow
+      parameters:
+        - name: code
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: iss
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uri
+      responses:
+        '302':
+          description: Redirect after login.
+  /logout:
+    get:
+      tags: [Auth]
+      operationId: logoutBrowserSession
+      summary: Clear the session and begin OIDC logout
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+        - $ref: '#/components/parameters/SessionCookie'
+      responses:
+        '302':
+          description: Redirect to the OIDC provider logout URL.
+  /mobile-auth/token-exchange:
+    post:
+      tags: [Auth]
+      operationId: exchangeMobileAuthorizationCode
+      summary: Exchange a mobile OIDC code for a session token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MobileTokenExchangeRequest'
+      responses:
+        '200':
+          description: Session created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MobileTokenExchangeSuccess'
+  /mobile-auth/logout:
+    post:
+      tags: [Auth]
+      operationId: logoutMobileSession
+      summary: Delete a mobile session token
+      parameters:
+        - $ref: '#/components/parameters/AuthorizationSessionHeader'
+      responses:
+        '200':
+          description: Logout processed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogoutSuccess'
+
+  # ─── USERS ──────────────────────────────────────────────────────────────────
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List all users
+      parameters:
+        - name: role
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+    post:
+      operationId: createUser
+      tags: [users]
+      summary: Create a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserBody"
+      responses:
+        "201":
+          description: Created user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /users/{id}:
+    get:
+      operationId: getUser
+      tags: [users]
+      summary: Get a user by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+    patch:
+      operationId: updateUser
+      tags: [users]
+      summary: Update a user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserBody"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+    delete:
+      operationId: deleteUser
+      tags: [users]
+      summary: Delete a user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── CONTRACTORS ─────────────────────────────────────────────────────────────
+  /contractors:
+    get:
+      operationId: listContractors
+      tags: [contractors]
+      summary: List all contractors
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: classification
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of contractors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Contractor"
+    post:
+      operationId: createContractor
+      tags: [contractors]
+      summary: Create a new contractor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateContractorBody"
+      responses:
+        "201":
+          description: Created contractor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Contractor"
+
+  /contractors/{id}:
+    get:
+      operationId: getContractor
+      tags: [contractors]
+      summary: Get a contractor by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Contractor details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Contractor"
+    patch:
+      operationId: updateContractor
+      tags: [contractors]
+      summary: Update a contractor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateContractorBody"
+      responses:
+        "200":
+          description: Updated contractor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Contractor"
+    delete:
+      operationId: deleteContractor
+      tags: [contractors]
+      summary: Delete a contractor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /contractors/{id}/blacklist:
+    patch:
+      operationId: toggleContractorBlacklist
+      tags: [contractors]
+      summary: Toggle contractor blacklist status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [blacklisted]
+              properties:
+                blacklisted:
+                  type: boolean
+                reason:
+                  type: ["string", "null"]
+      responses:
+        "200":
+          description: Updated contractor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Contractor"
+
+  /contractors/stats:
+    get:
+      operationId: getContractorStats
+      tags: [contractors]
+      summary: Contractor statistics summary
+      responses:
+        "200":
+          description: Contractor stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContractorStats"
+
+  # ─── CONTRACTS ────────────────────────────────────────────────────────────────
+  /contracts:
+    get:
+      operationId: listContracts
+      tags: [contracts]
+      summary: List all contracts
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: contractorId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of contracts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Contract"
+    post:
+      operationId: createContract
+      tags: [contracts]
+      summary: Create a new contract
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateContractBody"
+      responses:
+        "201":
+          description: Created contract
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Contract"
+
+  /contracts/{id}:
+    get:
+      operationId: getContract
+      tags: [contracts]
+      summary: Get a contract by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Contract details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Contract"
+    patch:
+      operationId: updateContract
+      tags: [contracts]
+      summary: Update a contract
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateContractBody"
+      responses:
+        "200":
+          description: Updated contract
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Contract"
+    delete:
+      operationId: deleteContract
+      tags: [contracts]
+      summary: Delete a contract
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /contracts/expiring-soon:
+    get:
+      operationId: getExpiringContracts
+      tags: [contracts]
+      summary: Get contracts expiring within 30 days
+      responses:
+        "200":
+          description: Expiring contracts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Contract"
+
+  /contracts/stats:
+    get:
+      operationId: getContractStats
+      tags: [contracts]
+      summary: Contract statistics summary
+      responses:
+        "200":
+          description: Contract stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContractStats"
+
+  # ─── ATTENDANCE ───────────────────────────────────────────────────────────────
+  /attendance:
+    get:
+      operationId: listAttendance
+      tags: [attendance]
+      summary: List attendance records
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: userId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: workAreaId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Attendance records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Attendance"
+    post:
+      operationId: createAttendance
+      tags: [attendance]
+      summary: Create an attendance record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAttendanceBody"
+      responses:
+        "201":
+          description: Created attendance record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attendance"
+
+  /attendance/{id}:
+    patch:
+      operationId: updateAttendance
+      tags: [attendance]
+      summary: Update attendance record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAttendanceBody"
+      responses:
+        "200":
+          description: Updated attendance record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attendance"
+
+  /attendance/today:
+    get:
+      operationId: getTodayAttendance
+      tags: [attendance]
+      summary: Get today's attendance summary
+      responses:
+        "200":
+          description: Today's attendance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttendanceSummary"
+
+  /attendance/stats:
+    get:
+      operationId: getAttendanceStats
+      tags: [attendance]
+      summary: Attendance statistics
+      parameters:
+        - name: month
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Attendance stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttendanceStats"
+
+  # ─── EVALUATIONS ─────────────────────────────────────────────────────────────
+  /evaluations:
+    get:
+      operationId: listEvaluations
+      tags: [evaluations]
+      summary: List evaluations
+      parameters:
+        - name: userId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: period
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of evaluations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Evaluation"
+    post:
+      operationId: createEvaluation
+      tags: [evaluations]
+      summary: Create an evaluation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEvaluationBody"
+      responses:
+        "201":
+          description: Created evaluation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Evaluation"
+
+  /evaluations/{id}:
+    get:
+      operationId: getEvaluation
+      tags: [evaluations]
+      summary: Get evaluation by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Evaluation details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Evaluation"
+    patch:
+      operationId: updateEvaluation
+      tags: [evaluations]
+      summary: Update evaluation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateEvaluationBody"
+      responses:
+        "200":
+          description: Updated evaluation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Evaluation"
+
+  /evaluations/rankings:
+    get:
+      operationId: getPerformanceRankings
+      tags: [evaluations]
+      summary: Get top performer rankings
+      responses:
+        "200":
+          description: Performance rankings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PerformanceRanking"
+
+  /evaluations/kpi-dashboard:
+    get:
+      operationId: getKpiDashboard
+      tags: [evaluations]
+      summary: KPI dashboard aggregate data
+      responses:
+        "200":
+          description: KPI dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KpiDashboard"
+
+  # ─── VIOLATIONS ──────────────────────────────────────────────────────────────
+  /violations:
+    get:
+      operationId: listViolations
+      tags: [violations]
+      summary: List violations
+      parameters:
+        - name: userId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of violations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Violation"
+    post:
+      operationId: createViolation
+      tags: [violations]
+      summary: Register a violation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateViolationBody"
+      responses:
+        "201":
+          description: Created violation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Violation"
+
+  /violations/{id}:
+    get:
+      operationId: getViolation
+      tags: [violations]
+      summary: Get violation by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Violation details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Violation"
+    patch:
+      operationId: updateViolation
+      tags: [violations]
+      summary: Update violation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateViolationBody"
+      responses:
+        "200":
+          description: Updated violation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Violation"
+
+  /violations/stats:
+    get:
+      operationId: getViolationStats
+      tags: [violations]
+      summary: Violation statistics
+      responses:
+        "200":
+          description: Violation stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ViolationStats"
+
+  # ─── WORK AREAS ───────────────────────────────────────────────────────────────
+  /work-areas:
+    get:
+      operationId: listWorkAreas
+      tags: [workAreas]
+      summary: List work areas
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of work areas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WorkArea"
+    post:
+      operationId: createWorkArea
+      tags: [workAreas]
+      summary: Create a work area
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateWorkAreaBody"
+      responses:
+        "201":
+          description: Created work area
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkArea"
+
+  /work-areas/{id}:
+    get:
+      operationId: getWorkArea
+      tags: [workAreas]
+      summary: Get work area by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Work area details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkArea"
+    patch:
+      operationId: updateWorkArea
+      tags: [workAreas]
+      summary: Update work area
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateWorkAreaBody"
+      responses:
+        "200":
+          description: Updated work area
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkArea"
+    delete:
+      operationId: deleteWorkArea
+      tags: [workAreas]
+      summary: Delete work area
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── EQUIPMENT ────────────────────────────────────────────────────────────────
+  /equipment:
+    get:
+      operationId: listEquipment
+      tags: [equipment]
+      summary: List equipment
+      parameters:
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: workAreaId
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of equipment
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Equipment"
+    post:
+      operationId: createEquipment
+      tags: [equipment]
+      summary: Add equipment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEquipmentBody"
+      responses:
+        "201":
+          description: Created equipment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Equipment"
+
+  /equipment/{id}:
+    get:
+      operationId: getEquipment
+      tags: [equipment]
+      summary: Get equipment by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Equipment details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Equipment"
+    patch:
+      operationId: updateEquipment
+      tags: [equipment]
+      summary: Update equipment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateEquipmentBody"
+      responses:
+        "200":
+          description: Updated equipment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Equipment"
+    delete:
+      operationId: deleteEquipment
+      tags: [equipment]
+      summary: Delete equipment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /equipment/stats:
+    get:
+      operationId: getEquipmentStats
+      tags: [equipment]
+      summary: Equipment utilization stats
+      responses:
+        "200":
+          description: Equipment stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EquipmentStats"
+
+  # ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      summary: List notifications for current user
+      parameters:
+        - name: unreadOnly
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Notifications list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+
+  /notifications/{id}/read:
+    patch:
+      operationId: markNotificationRead
+      tags: [notifications]
+      summary: Mark a notification as read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated notification
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+
+  /notifications/read-all:
+    patch:
+      operationId: markAllNotificationsRead
+      tags: [notifications]
+      summary: Mark all notifications as read
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogoutSuccess"
+
+  # ─── DASHBOARD ────────────────────────────────────────────────────────────────
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Executive dashboard summary stats
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/activity:
+    get:
+      operationId: getRecentActivity
+      tags: [dashboard]
+      summary: Recent system activity feed
+      responses:
+        "200":
+          description: Activity feed
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityItem"
+
+  /dashboard/attendance-trend:
+    get:
+      operationId: getAttendanceTrend
+      tags: [dashboard]
+      summary: Attendance trend for the last 7 days
+      responses:
+        "200":
+          description: Attendance trend
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TrendDataPoint"
+
+  /dashboard/contractor-performance:
+    get:
+      operationId: getContractorPerformance
+      tags: [dashboard]
+      summary: Contractor performance overview
+      responses:
+        "200":
+          description: Contractor performance data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ContractorPerformance"
+
+  # ─── REPORTS ──────────────────────────────────────────────────────────────────
+  /reports:
+    get:
+      operationId: listReports
+      tags: [reports]
+      summary: List saved reports
+      responses:
+        "200":
+          description: Reports list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Report"
+    post:
+      operationId: createReport
+      tags: [reports]
+      summary: Create/save a report definition
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateReportBody"
+      responses:
+        "201":
+          description: Created report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Report"
+
+  # ─── AUDIT LOGS ───────────────────────────────────────────────────────────────
+  /audit-logs:
+    get:
+      operationId: listAuditLogs
+      tags: [auditLogs]
+      summary: List audit log entries
+      parameters:
+        - name: userId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: action
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Audit log entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuditLog"
+
 components:
+  parameters:
+    AuthorizationSessionHeader:
+      name: Authorization
+      in: header
+      required: false
+      description: Opaque session token — `Bearer <sid>`.
+      schema:
+        type: string
+    SessionCookie:
+      name: sid
+      in: cookie
+      required: false
+      description: Browser session cookie.
+      schema:
+        type: string
+
   schemas:
     HealthStatus:
       type: object
@@ -34,3 +1287,953 @@ components:
       required:
         - status
 
+    # ── Auth Schemas ────────────────────────────────────────────────────────────
+    AuthUser:
+      type: object
+      required: [id, email, firstName, lastName, profileImageUrl]
+      properties:
+        id:
+          type: string
+        email:
+          type: [string, 'null']
+          format: email
+        firstName:
+          type: [string, 'null']
+        lastName:
+          type: [string, 'null']
+        profileImageUrl:
+          type: [string, 'null']
+    AuthUserEnvelope:
+      type: object
+      required: [user]
+      properties:
+        user:
+          oneOf:
+            - $ref: '#/components/schemas/AuthUser'
+            - type: 'null'
+    MobileTokenExchangeRequest:
+      type: object
+      required: [code, code_verifier, redirect_uri, state]
+      properties:
+        code:
+          type: string
+        code_verifier:
+          type: string
+        redirect_uri:
+          type: string
+          format: uri
+        state:
+          type: string
+        nonce:
+          type: string
+    MobileTokenExchangeSuccess:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+    LogoutSuccess:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    # ── User Schemas ────────────────────────────────────────────────────────────
+    User:
+      type: object
+      required: [id, replitId, email, firstName, lastName, role, status, createdAt]
+      properties:
+        id:
+          type: integer
+        replitId:
+          type: string
+        email:
+          type: [string, 'null']
+        firstName:
+          type: [string, 'null']
+        lastName:
+          type: [string, 'null']
+        profileImageUrl:
+          type: [string, 'null']
+        role:
+          type: string
+          enum: [super_admin, company_admin, project_manager, supervisor, contractor, employee, viewer]
+        department:
+          type: [string, 'null']
+        phone:
+          type: [string, 'null']
+        status:
+          type: string
+          enum: [active, inactive, suspended]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: [string, 'null']
+          format: date-time
+    CreateUserBody:
+      type: object
+      required: [email, firstName, lastName, role]
+      properties:
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        role:
+          type: string
+        department:
+          type: string
+        phone:
+          type: string
+    UpdateUserBody:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        role:
+          type: string
+        department:
+          type: string
+        phone:
+          type: string
+        status:
+          type: string
+
+    # ── Contractor Schemas ──────────────────────────────────────────────────────
+    Contractor:
+      type: object
+      required: [id, name, companyName, status, classification, blacklisted, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        companyName:
+          type: string
+        email:
+          type: [string, 'null']
+        phone:
+          type: [string, 'null']
+        nationalId:
+          type: [string, 'null']
+        taxNumber:
+          type: [string, 'null']
+        classification:
+          type: string
+          enum: [tier1, tier2, tier3, preferred, blacklisted]
+        status:
+          type: string
+          enum: [active, pending, suspended, expired]
+        blacklisted:
+          type: boolean
+        blacklistReason:
+          type: [string, 'null']
+        performanceScore:
+          type: ["number", "null"]
+        address:
+          type: [string, 'null']
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: [string, 'null']
+          format: date-time
+    CreateContractorBody:
+      type: object
+      required: [name, companyName, classification]
+      properties:
+        name:
+          type: string
+        companyName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        nationalId:
+          type: string
+        taxNumber:
+          type: string
+        classification:
+          type: string
+        address:
+          type: string
+    UpdateContractorBody:
+      type: object
+      properties:
+        name:
+          type: string
+        companyName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        classification:
+          type: string
+        status:
+          type: string
+        address:
+          type: string
+    ContractorStats:
+      type: object
+      required: [total, active, pending, blacklisted, byClassification]
+      properties:
+        total:
+          type: integer
+        active:
+          type: integer
+        pending:
+          type: integer
+        blacklisted:
+          type: integer
+        byClassification:
+          type: array
+          items:
+            type: object
+            required: [classification, count]
+            properties:
+              classification:
+                type: string
+              count:
+                type: integer
+
+    # ── Contract Schemas ────────────────────────────────────────────────────────
+    Contract:
+      type: object
+      required: [id, title, contractorId, status, startDate, endDate, value, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        contractorId:
+          type: integer
+        contractorName:
+          type: [string, 'null']
+        status:
+          type: string
+          enum: [draft, active, expired, renewed, terminated]
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        value:
+          type: number
+        paidAmount:
+          type: ["number", "null"]
+        description:
+          type: [string, 'null']
+        fileUrl:
+          type: [string, 'null']
+        version:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: [string, 'null']
+          format: date-time
+    CreateContractBody:
+      type: object
+      required: [title, contractorId, startDate, endDate, value]
+      properties:
+        title:
+          type: string
+        contractorId:
+          type: integer
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        value:
+          type: number
+        description:
+          type: string
+    UpdateContractBody:
+      type: object
+      properties:
+        title:
+          type: string
+        status:
+          type: string
+        endDate:
+          type: string
+          format: date
+        value:
+          type: number
+        paidAmount:
+          type: number
+        description:
+          type: string
+    ContractStats:
+      type: object
+      required: [total, active, expired, draft, totalValue, paidAmount]
+      properties:
+        total:
+          type: integer
+        active:
+          type: integer
+        expired:
+          type: integer
+        draft:
+          type: integer
+        totalValue:
+          type: number
+        paidAmount:
+          type: number
+        expiringThisMonth:
+          type: integer
+
+    # ── Attendance Schemas ──────────────────────────────────────────────────────
+    Attendance:
+      type: object
+      required: [id, userId, date, status, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        userName:
+          type: [string, 'null']
+        workAreaId:
+          type: ["integer", "null"]
+        workAreaName:
+          type: [string, 'null']
+        date:
+          type: string
+          format: date
+        checkIn:
+          type: [string, 'null']
+          format: date-time
+        checkOut:
+          type: [string, 'null']
+          format: date-time
+        status:
+          type: string
+          enum: [present, absent, late, half_day, leave]
+        overtimeHours:
+          type: ["number", "null"]
+        notes:
+          type: [string, 'null']
+        createdAt:
+          type: string
+          format: date-time
+    CreateAttendanceBody:
+      type: object
+      required: [userId, date, status]
+      properties:
+        userId:
+          type: integer
+        workAreaId:
+          type: integer
+        date:
+          type: string
+          format: date
+        checkIn:
+          type: string
+          format: date-time
+        checkOut:
+          type: string
+          format: date-time
+        status:
+          type: string
+        overtimeHours:
+          type: number
+        notes:
+          type: string
+    UpdateAttendanceBody:
+      type: object
+      properties:
+        checkIn:
+          type: string
+          format: date-time
+        checkOut:
+          type: string
+          format: date-time
+        status:
+          type: string
+        overtimeHours:
+          type: number
+        notes:
+          type: string
+    AttendanceSummary:
+      type: object
+      required: [date, present, absent, late, onLeave, total]
+      properties:
+        date:
+          type: string
+        present:
+          type: integer
+        absent:
+          type: integer
+        late:
+          type: integer
+        onLeave:
+          type: integer
+        total:
+          type: integer
+        attendanceRate:
+          type: number
+    AttendanceStats:
+      type: object
+      required: [presentRate, absentRate, lateRate, overtimeHours, trend]
+      properties:
+        presentRate:
+          type: number
+        absentRate:
+          type: number
+        lateRate:
+          type: number
+        overtimeHours:
+          type: number
+        trend:
+          type: array
+          items:
+            $ref: "#/components/schemas/TrendDataPoint"
+
+    # ── Evaluation Schemas ──────────────────────────────────────────────────────
+    Evaluation:
+      type: object
+      required: [id, userId, period, overallScore, status, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        userName:
+          type: [string, 'null']
+        evaluatorId:
+          type: ["integer", "null"]
+        period:
+          type: string
+        kpiScore:
+          type: ["number", "null"]
+        attendanceScore:
+          type: ["number", "null"]
+        qualityScore:
+          type: ["number", "null"]
+        punctualityScore:
+          type: ["number", "null"]
+        overallScore:
+          type: number
+        status:
+          type: string
+          enum: [draft, submitted, approved]
+        comments:
+          type: [string, 'null']
+        createdAt:
+          type: string
+          format: date-time
+    CreateEvaluationBody:
+      type: object
+      required: [userId, period, overallScore]
+      properties:
+        userId:
+          type: integer
+        period:
+          type: string
+        kpiScore:
+          type: number
+        attendanceScore:
+          type: number
+        qualityScore:
+          type: number
+        punctualityScore:
+          type: number
+        overallScore:
+          type: number
+        comments:
+          type: string
+    UpdateEvaluationBody:
+      type: object
+      properties:
+        kpiScore:
+          type: number
+        attendanceScore:
+          type: number
+        qualityScore:
+          type: number
+        punctualityScore:
+          type: number
+        overallScore:
+          type: number
+        status:
+          type: string
+        comments:
+          type: string
+    PerformanceRanking:
+      type: object
+      required: [userId, userName, averageScore, rank]
+      properties:
+        userId:
+          type: integer
+        userName:
+          type: string
+        profileImageUrl:
+          type: [string, 'null']
+        averageScore:
+          type: number
+        rank:
+          type: integer
+        trend:
+          type: string
+    KpiDashboard:
+      type: object
+      required: [averageKpi, topPerformers, totalEvaluations, pendingEvaluations]
+      properties:
+        averageKpi:
+          type: number
+        topPerformers:
+          type: integer
+        totalEvaluations:
+          type: integer
+        pendingEvaluations:
+          type: integer
+        byDepartment:
+          type: array
+          items:
+            type: object
+            required: [department, avgScore]
+            properties:
+              department:
+                type: string
+              avgScore:
+                type: number
+
+    # ── Violation Schemas ───────────────────────────────────────────────────────
+    Violation:
+      type: object
+      required: [id, userId, category, severity, status, date, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        userName:
+          type: [string, 'null']
+        category:
+          type: string
+          enum: [safety, attendance, conduct, quality, policy]
+        severity:
+          type: string
+          enum: [minor, moderate, major, critical]
+        status:
+          type: string
+          enum: [open, under_review, resolved, escalated]
+        date:
+          type: string
+          format: date
+        description:
+          type: string
+        penalty:
+          type: ["number", "null"]
+        evidenceUrl:
+          type: [string, 'null']
+        createdAt:
+          type: string
+          format: date-time
+    CreateViolationBody:
+      type: object
+      required: [userId, category, severity, date, description]
+      properties:
+        userId:
+          type: integer
+        category:
+          type: string
+        severity:
+          type: string
+        date:
+          type: string
+          format: date
+        description:
+          type: string
+        penalty:
+          type: number
+    UpdateViolationBody:
+      type: object
+      properties:
+        status:
+          type: string
+        penalty:
+          type: number
+        description:
+          type: string
+    ViolationStats:
+      type: object
+      required: [total, open, resolved, totalPenalties, byCategory, bySeverity]
+      properties:
+        total:
+          type: integer
+        open:
+          type: integer
+        resolved:
+          type: integer
+        totalPenalties:
+          type: number
+        byCategory:
+          type: array
+          items:
+            type: object
+            required: [category, count]
+            properties:
+              category:
+                type: string
+              count:
+                type: integer
+        bySeverity:
+          type: array
+          items:
+            type: object
+            required: [severity, count]
+            properties:
+              severity:
+                type: string
+              count:
+                type: integer
+
+    # ── Work Area Schemas ───────────────────────────────────────────────────────
+    WorkArea:
+      type: object
+      required: [id, name, location, status, progress, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        location:
+          type: string
+        description:
+          type: [string, 'null']
+        supervisorId:
+          type: ["integer", "null"]
+        supervisorName:
+          type: [string, 'null']
+        status:
+          type: string
+          enum: [active, inactive, completed, on_hold]
+        progress:
+          type: number
+        latitude:
+          type: ["number", "null"]
+        longitude:
+          type: ["number", "null"]
+        teamSize:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+          format: date-time
+    CreateWorkAreaBody:
+      type: object
+      required: [name, location]
+      properties:
+        name:
+          type: string
+        location:
+          type: string
+        description:
+          type: string
+        supervisorId:
+          type: integer
+        latitude:
+          type: number
+        longitude:
+          type: number
+    UpdateWorkAreaBody:
+      type: object
+      properties:
+        name:
+          type: string
+        location:
+          type: string
+        description:
+          type: string
+        supervisorId:
+          type: integer
+        status:
+          type: string
+        progress:
+          type: number
+
+    # ── Equipment Schemas ───────────────────────────────────────────────────────
+    Equipment:
+      type: object
+      required: [id, name, type, status, condition, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        serialNumber:
+          type: [string, 'null']
+        type:
+          type: string
+          enum: [machinery, vehicle, tool, it_equipment, furniture, other]
+        category:
+          type: string
+          enum: [inventory, scrap]
+        status:
+          type: string
+          enum: [available, assigned, maintenance, scrapped, disposed]
+        condition:
+          type: string
+          enum: [excellent, good, fair, poor, scrapped]
+        workAreaId:
+          type: ["integer", "null"]
+        workAreaName:
+          type: [string, 'null']
+        assignedToId:
+          type: ["integer", "null"]
+        value:
+          type: ["number", "null"]
+        purchaseDate:
+          type: [string, 'null']
+          format: date
+        lastMaintenanceDate:
+          type: [string, 'null']
+          format: date
+        nextMaintenanceDate:
+          type: [string, 'null']
+          format: date
+        notes:
+          type: [string, 'null']
+        createdAt:
+          type: string
+          format: date-time
+    CreateEquipmentBody:
+      type: object
+      required: [name, type, category, condition]
+      properties:
+        name:
+          type: string
+        serialNumber:
+          type: string
+        type:
+          type: string
+        category:
+          type: string
+        condition:
+          type: string
+        workAreaId:
+          type: integer
+        value:
+          type: number
+        purchaseDate:
+          type: string
+          format: date
+        notes:
+          type: string
+    UpdateEquipmentBody:
+      type: object
+      properties:
+        name:
+          type: string
+        status:
+          type: string
+        condition:
+          type: string
+        workAreaId:
+          type: integer
+        assignedToId:
+          type: integer
+        lastMaintenanceDate:
+          type: string
+          format: date
+        nextMaintenanceDate:
+          type: string
+          format: date
+        notes:
+          type: string
+    EquipmentStats:
+      type: object
+      required: [total, available, assigned, maintenance, scrapped]
+      properties:
+        total:
+          type: integer
+        available:
+          type: integer
+        assigned:
+          type: integer
+        maintenance:
+          type: integer
+        scrapped:
+          type: integer
+        totalValue:
+          type: number
+        byType:
+          type: array
+          items:
+            type: object
+            required: [type, count]
+            properties:
+              type:
+                type: string
+              count:
+                type: integer
+
+    # ── Notification Schemas ────────────────────────────────────────────────────
+    Notification:
+      type: object
+      required: [id, type, title, message, read, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: ["integer", "null"]
+        type:
+          type: string
+          enum: [contract_expiry, attendance_alert, violation, equipment_maintenance, kpi_update, system]
+        title:
+          type: string
+        message:
+          type: string
+        read:
+          type: boolean
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
+        relatedId:
+          type: ["integer", "null"]
+        relatedType:
+          type: [string, 'null']
+        createdAt:
+          type: string
+          format: date-time
+
+    # ── Dashboard Schemas ───────────────────────────────────────────────────────
+    DashboardSummary:
+      type: object
+      required: [totalUsers, totalContractors, activeContracts, contractValue, presentToday, openViolations, equipmentTotal, workAreas]
+      properties:
+        totalUsers:
+          type: integer
+        totalContractors:
+          type: integer
+        activeContracts:
+          type: integer
+        contractValue:
+          type: number
+        presentToday:
+          type: integer
+        openViolations:
+          type: integer
+        equipmentTotal:
+          type: integer
+        workAreas:
+          type: integer
+        expiringContracts:
+          type: integer
+        unreadNotifications:
+          type: integer
+    ActivityItem:
+      type: object
+      required: [id, type, description, createdAt]
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        description:
+          type: string
+        userId:
+          type: ["integer", "null"]
+        userName:
+          type: [string, 'null']
+        createdAt:
+          type: string
+          format: date-time
+    TrendDataPoint:
+      type: object
+      required: [label, value]
+      properties:
+        label:
+          type: string
+        value:
+          type: number
+        secondaryValue:
+          type: ["number", "null"]
+    ContractorPerformance:
+      type: object
+      required: [contractorId, contractorName, score, contracts, violations]
+      properties:
+        contractorId:
+          type: integer
+        contractorName:
+          type: string
+        score:
+          type: number
+        contracts:
+          type: integer
+        violations:
+          type: integer
+
+    # ── Report Schemas ──────────────────────────────────────────────────────────
+    Report:
+      type: object
+      required: [id, name, type, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        type:
+          type: string
+          enum: [attendance, contractors, contracts, violations, equipment, kpi, custom]
+        filters:
+          type: [string, 'null']
+        createdById:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+          format: date-time
+    CreateReportBody:
+      type: object
+      required: [name, type]
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        filters:
+          type: string
+
+    # ── Audit Log Schemas ───────────────────────────────────────────────────────
+    AuditLog:
+      type: object
+      required: [id, action, entity, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: ["integer", "null"]
+        userName:
+          type: [string, 'null']
+        action:
+          type: string
+        entity:
+          type: string
+        entityId:
+          type: ["integer", "null"]
+        details:
+          type: [string, 'null']
+        ipAddress:
+          type: [string, 'null']
+        createdAt:
+          type: string
+          format: date-time

@@ -1,0 +1,248 @@
+Build a full enterprise-grade SaaS web application called "ProManageX".
+
+The platform should be modern, scalable, responsive, secure, and built for large enterprises such as telecom companies, construction companies, outsourcing firms, engineering companies, logistics companies, and facility management providers.
+
+Use:
+- Frontend: React + TailwindCSS
+- Backend: Node.js + Express
+- Database: PostgreSQL
+- Authentication: JWT + Role-Based Access Control
+- File Storage: Local storage with future S3 compatibility
+- Charts: Recharts
+- UI Style: Modern enterprise dashboard similar to Monday.com, Jira, SAP Fiori, and ServiceNow
+- Architecture: Modular scalable architecture
+- API Style: RESTful APIs
+- State Management: React Context or Zustand
+- Tables: Advanced searchable/filterable data tables
+- Notifications: Real-time notifications system
+- Deployment Ready
+
+==================================================
+MAIN SYSTEM MODULES
+==================================================
+
+1. Authentication & User Management
+- Login/Logout
+- JWT Authentication
+- Password reset
+- Multi-role system:
+  - Super Admin
+  - Company Admin
+  - Project Manager
+  - Supervisor
+  - Contractor
+  - Employee
+  - Viewer
+- User permissions management
+- User activity logs
+- Session management
+
+==================================================
+
+2. Contractor Management Module
+- Add/Edit/Delete contractors
+- Contractor profiles
+- Company information
+- National ID / Tax Number
+- Contract status
+- Contractor classification
+- Attach documents
+- Contractor history
+- Blacklist feature
+- Contractor performance tracking
+- Contractor approval workflow
+
+==================================================
+
+3. Contract Management Module
+- Create contracts
+- Contract lifecycle management
+- Contract renewals
+- Expiry alerts
+- Digital signatures support
+- Upload contract files
+- Contract versioning
+- Budget tracking
+- Payment milestones
+- Contract KPIs
+
+==================================================
+
+4. Attendance & Workforce Tracking
+- Daily attendance
+- QR attendance support
+- GPS attendance verification
+- Shift scheduling
+- Overtime calculations
+- Absence management
+- Team attendance dashboard
+- Export attendance reports
+
+==================================================
+
+5. Evaluation & KPI Module
+- Monthly evaluations
+- KPI scorecards
+- Performance ranking
+- Team productivity metrics
+- Supervisor evaluations
+- Auto KPI calculations
+- KPI dashboards with charts
+- Historical trend analysis
+
+==================================================
+
+6. Violations & Penalties Module
+- Register violations
+- Penalty management
+- Warning system
+- Escalation workflow
+- Violation categories
+- Financial deduction tracking
+- Attach evidence/photos/files
+
+==================================================
+
+7. Team Work Areas Module
+- Manage project sites
+- Assign teams to work areas
+- Area status tracking
+- Geo-location support
+- Interactive project map
+- Site supervisors
+- Work progress percentages
+
+==================================================
+
+8. Scrap Equipment Module
+- Register scrap assets
+- Asset disposal workflow
+- Scrap valuation
+- Approval cycle
+- Scrap reports
+- Equipment condition tracking
+- Photo attachments
+
+==================================================
+
+9. Storage Equipment & Inventory Module
+- Warehouse management
+- Equipment inventory
+- Asset tracking
+- Barcode/QR support
+- Equipment assignment
+- Check-in / Check-out
+- Maintenance schedules
+- Inventory alerts
+- Damage reporting
+
+==================================================
+
+10. Dashboard & Analytics
+- Executive dashboard
+- Real-time statistics
+- KPI visualizations
+- Contractor performance analytics
+- Financial summaries
+- Attendance analytics
+- Equipment utilization charts
+- Export PDF and Excel reports
+
+==================================================
+
+11. Notifications & Alerts
+- Email notifications
+- In-system notifications
+- Contract expiry alerts
+- Attendance alerts
+- Violation alerts
+- Equipment maintenance alerts
+
+==================================================
+
+12. Reports System
+- Dynamic report builder
+- Export:
+  - PDF
+  - Excel
+  - CSV
+- Scheduled reports
+- Filters and advanced search
+
+==================================================
+
+13. Mobile Responsive Design
+- Fully responsive UI
+- Tablet friendly
+- Mobile optimized dashboards
+
+==================================================
+
+14. Security Requirements
+- Secure authentication
+- Role-based access
+- API validation
+- SQL injection protection
+- Audit logs
+- File upload validation
+- Activity monitoring
+
+==================================================
+
+15. Database Design
+Create a professional PostgreSQL relational schema including:
+- users
+- contractors
+- contracts
+- attendance
+- evaluations
+- kpis
+- violations
+- work_areas
+- equipment
+- inventory
+- notifications
+- reports
+- audit_logs
+
+==================================================
+
+16. Additional Features
+- Dark/Light mode
+- Multi-language support (English/Arabic)
+- Search everywhere
+- Global filters
+- Smart dashboard widgets
+- AI-ready architecture for future AI analytics integration
+
+==================================================
+
+17. Deliverables
+Generate:
+- Full frontend
+- Full backend
+- Database schema
+- REST APIs
+- Authentication system
+- Sample seed data
+- Clean folder structure
+- README documentation
+- Environment variables example
+- Deployment instructions
+
+==================================================
+
+Design Theme:
+Use a premium enterprise UI with:
+- Professional sidebar
+- Top navigation
+- Cards
+- Analytics widgets
+- Modern tables
+- Clean typography
+- Smooth animations
+- Corporate telecom/construction style
+
+==================================================
+
+The final system should feel like a premium enterprise SaaS product used by Fortune 500 companies.
